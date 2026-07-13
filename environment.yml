@@ -1,0 +1,14 @@
+name: histopathology-slides
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python 3.12 to match the project venv (see run_gui.ps1 / requirements.txt).
+  # numpy 2.4 / scipy 1.17 / tensorflow 2.21 all require Python >= 3.11.
+  - python=3.12
+  - pip
+  - pip:
+    # Exact, tested pins live in requirements.txt so the conda env and the
+    # venv can never drift. Runtime packages used by ensemble_gui.py:
+    #   tensorflow, keras, numpy, pillow, scikit-learn, opencv-python, albumentations
+    - -r requirements.txt

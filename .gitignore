@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# BACH dataset images — NOT redistributed in this repo (~6.9 GB).
+# Download them from Kaggle into Example/Photos/<class>/ (see README).
+# ---------------------------------------------------------------------------
+*.tif
+*.tiff
+microscopy_ground_truth.csv
+
+# Trained model weights are NOT stored in git — they are distributed via GitHub
+# Releases (see README). This keeps the repo small and avoids Git LFS bandwidth limits.
+*.keras
+*.h5
+/Output/*.json
+/ensemble_models/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editor / IDE (contains machine-specific interpreter paths)
+.vscode/
+.idea/
+
+# OS / OneDrive cruft
+Thumbs.db
+desktop.ini
+.DS_Store
+*.Zone.Identifier

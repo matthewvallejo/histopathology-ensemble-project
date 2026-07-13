@@ -1,0 +1,26 @@
+{
+  "model_name": "ResNet50V2",
+  "seeds": [
+    42
+  ],
+  "model_paths": [
+    "ResNet50V2_seed42.keras"
+  ],
+  "img_size": [
+    384,
+    384
+  ],
+  "class_names": [
+    "Normal",
+    "Benign",
+    "InSitu",
+    "Invasive"
+  ],
+  "stain_normalization": true,
+  "layers_to_unfreeze": 30,
+  "epochs_frozen": 50,
+  "epochs_finetune": 10,
+  "loss_type": "focal",
+  "class_weight_mode": "balanced",
+  "timestamp": "2026-06-09T01:21:50.012410"
+}
