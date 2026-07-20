@@ -32,7 +32,7 @@ everything immediately.
 
 ## Dataset & credit
 
-The model in `Example/` was trained on the **BACH (BreAst Cancer Histology)** dataset,
+The model included in "Releases" was trained on the **BACH (BreAst Cancer Histology)** dataset,
 obtained from Kaggle:
 
 > **BACH Breast Cancer Histology Images**
