@@ -6,7 +6,7 @@ deep learning. It lets you train your own models, evaluate them, and run predict
 images without writing any code.
 
 The app is built with Python's standard `tkinter` toolkit and uses TensorFlow/Keras under
-the hood. A fully trained example model and its training data are included so you can try
+the hood. A fully trained example model and links to the training data are included so you can try
 everything immediately.
 
 > ⚠️ **Disclaimer:** This is a portfolio / educational project. It is **not** a medical
