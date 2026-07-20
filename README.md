@@ -9,7 +9,7 @@ The app is built with Python's standard `tkinter` toolkit and uses TensorFlow/Ke
 the hood. A fully trained example model and links to the training data are included so you can try
 everything immediately.
 
-> ⚠️ **Disclaimer:** This is a portfolio / educational project. It is **not** a medical
+> ⚠️ **Disclaimer:** This is a portfolio/educational project. It is **not** a medical
 > device and must **not** be used for diagnosis or any clinical decision-making.
 
 ---
