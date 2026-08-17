@@ -1,5 +1,5 @@
 # Histopathology Ensemble Classifier
-
+<img width="1918" height="1016" alt="Ensemble_Trainer" src="https://github.com/user-attachments/assets/cc1823ed-2538-4517-b138-0157f6aef594" />
 A desktop application (GUI) for classifying **breast cancer histology images** into four
 tissue categories — **Normal, Benign, In Situ carcinoma, and Invasive carcinoma** — using
 deep learning. It lets you train your own models, evaluate them, and run predictions on new
