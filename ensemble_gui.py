@@ -8,8 +8,9 @@ individual models with full configuration options.
 import tkinter as tk
 from tkinter import ttk, filedialog, scrolledtext, messagebox
 import threading
+import queue
+import re
 import sys
-import io
 import os
 import json
 
@@ -93,32 +94,85 @@ def focal_loss(gamma=2.0, alpha=0.25):
 
 
 class OutputRedirector:
-    """Redirects stdout to a tkinter text widget."""
+    """Redirects stdout to a tkinter text widget.
 
-    _ANSI_ESCAPE = __import__('re').compile(r'\x1b\[[0-9;]*[mGKA-Z]')
+    Tkinter is not thread safe, so the worker thread never touches the
+    widget: ``write`` only appends to a queue, and ``_drain`` — scheduled
+    on the main thread with ``after`` — moves the queued text into the
+    widget. Create and ``start`` it on the main thread, and ``stop`` it
+    there too once the worker is done.
+    """
+
+    _ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[mGKA-Z]')
+    _POLL_MS = 50
 
     def __init__(self, text_widget):
         self.text_widget = text_widget
-        self.buffer = io.StringIO()
+        self.queue = queue.Queue()
+        self._running = False
+        self._after_id = None
+
+    # --- file-like interface: safe to call from any thread ---
 
     def write(self, text):
         text = self._ANSI_ESCAPE.sub('', text)
-        if not text:
+        if text:
+            self.queue.put(text)
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
+    def flush(self):
+        # Keras calls this after every progress message. The queue is
+        # drained on a timer, so there is nothing to force here.
+        pass
+
+    def isatty(self):
+        return False
+
+    # --- main thread only ---
+
+    def start(self):
+        """Begin polling the queue."""
+        self._running = True
+        self._drain()
+
+    def stop(self):
+        """Stop polling, writing out whatever is still queued."""
+        self._running = False
+        if self._after_id is not None:
+            self.text_widget.after_cancel(self._after_id)
+            self._after_id = None
+        self._write_pending()
+
+    def _drain(self):
+        self._write_pending()
+        if self._running:
+            self._after_id = self.text_widget.after(self._POLL_MS, self._drain)
+
+    def _write_pending(self):
+        chunks = []
+        try:
+            while True:
+                chunks.append(self.queue.get_nowait())
+        except queue.Empty:
+            pass
+        if not chunks:
             return
+
+        # Handle \r: everything after one overwrites the current (last)
+        # line rather than appending to it.
+        segments = ''.join(chunks).split('\r')
         self.text_widget.configure(state='normal')
-        # Handle \r: overwrite the current (last) line rather than appending
-        if '\r' in text:
-            for chunk in text.split('\r'):
-                if not chunk:
-                    continue
-                # Delete the current last line then insert the replacement
-                self.text_widget.delete("end-1l linestart", "end-1c")
-                self.text_widget.insert(tk.END, chunk)
-        else:
-            self.text_widget.insert(tk.END, text)
+        self.text_widget.insert(tk.END, segments[0])
+        for segment in segments[1:]:
+            if not segment:
+                continue
+            self.text_widget.delete("end-1l linestart", "end-1c")
+            self.text_widget.insert(tk.END, segment)
         self.text_widget.see(tk.END)
         self.text_widget.configure(state='disabled')
-        self.text_widget.update_idletasks()
 
 
 class EnsembleTrainerGUI:
@@ -1770,13 +1824,17 @@ class EnsembleGUI:
         self.train_progress.start(10)
         self.train_status_var.set("Training in progress...")
 
-        thread = threading.Thread(target=self._training_worker, daemon=True)
+        redirector = OutputRedirector(self.train_output_text)
+        redirector.start()
+
+        thread = threading.Thread(target=self._training_worker,
+                                  args=(redirector,), daemon=True)
         thread.start()
 
-    def _training_worker(self):
+    def _training_worker(self, redirector):
         """Worker function for training."""
         old_stdout = sys.stdout
-        sys.stdout = OutputRedirector(self.train_output_text)
+        sys.stdout = redirector
 
         try:
             seeds = [int(s.strip()) for s in self.seeds_str.get().split(',')]
@@ -1817,6 +1875,7 @@ class EnsembleGUI:
 
         finally:
             sys.stdout = old_stdout
+            self.root.after(0, redirector.stop)
             self.root.after(0, self._training_complete)
 
     def _training_complete(self):
@@ -1840,13 +1899,17 @@ class EnsembleGUI:
         self.eval_progress.start(10)
         self.eval_status_var.set("Evaluation in progress...")
 
-        thread = threading.Thread(target=self._evaluation_worker, daemon=True)
+        redirector = OutputRedirector(self.eval_output_text)
+        redirector.start()
+
+        thread = threading.Thread(target=self._evaluation_worker,
+                                  args=(redirector,), daemon=True)
         thread.start()
 
-    def _evaluation_worker(self):
+    def _evaluation_worker(self, redirector):
         """Worker function for evaluation."""
         old_stdout = sys.stdout
-        sys.stdout = OutputRedirector(self.eval_output_text)
+        sys.stdout = redirector
 
         try:
             evaluator = IndividualModelEvaluatorGUI(
@@ -1881,6 +1944,7 @@ class EnsembleGUI:
 
         finally:
             sys.stdout = old_stdout
+            self.root.after(0, redirector.stop)
             self.root.after(0, self._evaluation_complete)
 
     def _evaluation_complete(self):
